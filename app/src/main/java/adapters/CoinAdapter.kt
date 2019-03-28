@@ -21,9 +21,9 @@ class CoinAdapter(private val coins: Map<Int,Coin>, private val context: Context
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.symbol.text = coins.get(position)?.symbol
-        holder.name.text = coins.get (position)?.name
-        holder.name.text = coins.get (position)?.price.toString()
+        holder.symbol.text = coins[position]?.symbol
+        holder.name.text = coins[position]?.name
+        holder.name.text = coins[position]?.price.toString()
 
     }
 

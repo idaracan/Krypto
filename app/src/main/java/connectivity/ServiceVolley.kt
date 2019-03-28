@@ -1,11 +1,13 @@
 package connectivity
 
+import android.content.Context
 import android.util.Log
 import com.android.volley.AuthFailureError
 import com.android.volley.Response
 import com.android.volley.VolleyLog
 import com.android.volley.toolbox.JsonObjectRequest
 import org.json.JSONObject
+import util.PropertiesUtil
 
 class ServiceVolley : ServiceInterface {
 
@@ -32,7 +34,7 @@ class ServiceVolley : ServiceInterface {
         BackendVolley.instance?.addToRequestQueue(jsonObjReq, TAG)
     }
 
-    override fun get(path: String, completionHandler: (response: JSONObject?) -> Unit) {
+    override fun get(path: String, context: Context,completionHandler: (response: JSONObject?) -> Unit) {
         val jsonObjectRequest = object : JsonObjectRequest(Method.GET, path, null,
             Response.Listener<JSONObject> {response ->
                 Log.d(TAG, "/get request OK! Response: $response")
@@ -44,10 +46,13 @@ class ServiceVolley : ServiceInterface {
             }) {
                 override fun getHeaders(): MutableMap<String, String> {
                     val headers = HashMap<String, String>()
-                    headers["X-CMC_PRO_API_KEY"] = "df178069-5fd5-4f7d-893e-7b558d296356"
+                    val header  = PropertiesUtil.getProperties("private.properties", context).getProperty("header")
+                    val apiKey  = PropertiesUtil.getProperties("private.properties", context).getProperty("apiKey")
+                    headers[header] = apiKey
                     return headers
                 }
             }
         BackendVolley.instance?.addToRequestQueue(jsonObjectRequest, TAG)
     }
+
 }

@@ -15,11 +15,4 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
 
-    fun getLatests(view: View) {
-        val serviceVolley = ServiceVolley()
-        val apiController = APIController(serviceVolley)
-        apiController.get(Constants.urlLatests) {  response ->
-            textView.text = response.toString()
-        }
-    }
 }

@@ -3,10 +3,11 @@ package fragments
 import adapters.CoinAdapter
 import android.content.Context
 import android.net.Uri
+import android.os.AsyncTask
 import android.os.Bundle
-import android.support.annotation.RequiresApi
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -17,24 +18,17 @@ import connectivity.APIController
 import connectivity.ServiceVolley
 import data.Coin
 import kotlinx.android.synthetic.main.fragment_base.*
-import org.json.JSONArray
 import org.json.JSONObject
 import util.CoinUtils
 import util.Constants
+import util.PropertiesUtil
+import java.util.*
+import kotlin.properties.Delegates
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 private const val initParam = "fragClass"
 
-/**
- * A simple [Fragment] subclass.
- * Activities that contain this fragment must implement the
- * [BaseFragment.OnFragmentInteractionListener] interface
- * to handle interaction events.
- * Use the [BaseFragment.newInstance] factory method to
- * create an instance of this fragment.
- *
- */
 class BaseFragment : Fragment() {
 
     private var fragmentType: Int? = null
@@ -64,7 +58,7 @@ class BaseFragment : Fragment() {
         if (context is OnFragmentInteractionListener) {
             listener = context
         } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
         }
     }
 
@@ -73,34 +67,9 @@ class BaseFragment : Fragment() {
         listener = null
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     *
-     *
-     * See the Android Training lesson [Communicating with Other Fragments]
-     * (http://developer.android.com/training/basics/fragments/communicating.html)
-     * for more information.
-     */
     interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         fun onFragmentInteraction(uri: Uri)
-    }
-
-    companion object {
-        /**
-         * Excecuted when creating a new Base Fragment
-         * InitParam: value to determine the content to load
-         */
-        @JvmStatic
-        fun newInstance(fragmentType: Int) =
-            BaseFragment().apply {
-                arguments = Bundle().apply {
-                    putInt(initParam, fragmentType)
-                }
-            }
     }
 
 
@@ -111,20 +80,48 @@ class BaseFragment : Fragment() {
             R.id.navigation_highlights -> Log.i("fragment", "Highlights Selected")
             else -> Log.i("BaseFragment", "None selected")
         }
-        getData(Constants.urlLatests)
+        val urlLatests = PropertiesUtil.getProperties("public.properties", context!!).getProperty("urlLatests")
+        DownloadData(requireContext(), recyclerView).execute(urlLatests)
+
     }
 
-    fun getData(category: String) {
-        val serviceVolley = ServiceVolley()
-        val apiController = APIController(serviceVolley)
-        apiController.get(category) { response ->
-            response?.let {
-                val coins: Map<Int, Coin> = CoinUtils.getAllCoins(response)
-                recyclerView.layoutManager = LinearLayoutManager(context)
-                recyclerView.adapter = context?.let { it1 -> CoinAdapter(coins, it1) }
-            }
-        }
+    companion object {
+        class DownloadData(context: Context, recyclerView: RecyclerView):
+            AsyncTask<String, Void, String >() {
 
+            var propContext: Context by Delegates.notNull()
+            var propRecyclerView: RecyclerView by Delegates.notNull()
+
+            init {
+                propContext = context
+                propRecyclerView = recyclerView
+            }
+
+            override fun doInBackground(vararg url: String): String? {
+                getData(url[0])
+                return "Done!"
+            }
+
+            private fun getData(category: String) {
+                val serviceVolley = ServiceVolley()
+                val apiController = APIController(serviceVolley)
+                apiController.get(category, propContext) { response ->
+                    response?.let {
+                        val coins: Map<Int, Coin> = CoinUtils.getAllCoins(response)
+                        propRecyclerView.layoutManager = LinearLayoutManager(propContext)
+                        propRecyclerView.adapter = propContext.let { it1 -> CoinAdapter(coins, it1) }
+                    }
+                }
+            }
+
+        }
+        @JvmStatic
+        fun newInstance(fragmentType: Int) =
+            BaseFragment().apply {
+                arguments = Bundle().apply {
+                    putInt(initParam, fragmentType)
+                }
+            }
     }
 
 }
